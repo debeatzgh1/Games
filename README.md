@@ -1,373 +1,403 @@
+                                                    <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Debeatzgh Games — Floating Launcher</title>
 <style>
-  /* 🌟 Fade Slide Animation */
-  @keyframes fadeSlideUp {
-    0% { opacity: 0; transform: translateY(0) translateX(20px); }
-    100% { opacity: 1; transform: translateY(0) translateX(0); }
+  :root{
+    --bg:#060606;
+    --panel:#0f0f10;
+    --card:#111214;
+    --accent:#00ff88;
+    --muted:#bfcfc0;
+    --glass: rgba(255,255,255,0.02);
   }
 
-  /* ❤️ Heartbeat Animation */
-  @keyframes heartbeat {
-    0% { transform: scale(1); }
-    25% { transform: scale(1.08); }
-    50% { transform: scale(1); }
-    75% { transform: scale(1.08); }
-    100% { transform: scale(1); }
-  }
+  /* Basic page reset */
+  html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;}
+  body{background:var(--bg); color:#fff; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
 
-  .floating-btn-group {
-    animation: fadeSlideUp 0.6s ease-out;
-  }
-
-  /* Iframe Modal Styles */
-  #iframe-modal {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 115%;
-    background: rgba(0,0,0,0.6);
+  /* Floating icon-only button - left center */
+  .floating-launcher {
+    position:fixed;
+    left:18px;
+    top:50%;
+    transform:translateY(-50%);
+    z-index:9998;
+    width:62px;
+    height:62px;
+    border-radius:50%;
+    background:linear-gradient(180deg,var(--panel),rgba(0,0,0,.4));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 8px 30px rgba(0,0,0,.6), 0 2px 8px rgba(0,0,0,.5);
+    border:2px solid rgba(255,255,255,0.04);
+    cursor:pointer;
+    transition:transform .18s ease, box-shadow .18s;
     backdrop-filter: blur(4px);
   }
+  .floating-launcher:active{ transform:translateY(-50%) scale(.98) }
+  .floating-launcher .icon { width:28px; height:28px; display:block; fill:var(--accent) }
 
-  .modal-content {
-    position: relative;
-    margin: 2% auto;
-    background: #fff;
-    border-radius: 16px;
-    width: 95%;
-    height: 90%;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    overflow: hidden;
-    animation: fadeIn 0.3s ease;
+  /* Slide-out panel */
+  .games-panel {
+    position:fixed;
+    left:0;
+    top:0;
+    height:100vh;
+    width:0;
+    max-width:420px;
+    background:linear-gradient(180deg,var(--panel),#0c0c0c);
+    box-shadow: 4px 0 40px rgba(0,0,0,0.6);
+    z-index:9997;
+    overflow:hidden;
+    transition: width .32s cubic-bezier(.2,.9,.2,1);
+    border-right:1px solid rgba(255,255,255,0.03);
+  }
+  .games-panel.open { width: 92vw; max-width:420px; }
+
+  .panel-inner { padding:18px; height:100%; display:flex; flex-direction:column; gap:12px; box-sizing:border-box; }
+
+  .panel-header {
+    display:flex;align-items:center;gap:12px;
+  }
+  .panel-header h2 { margin:0;font-size:1.05rem;color:var(--accent) }
+  .panel-header p { margin:0;color:var(--muted);font-size:.9rem }
+
+  .close-panel {
+    margin-left:auto;
+    background:transparent;
+    border:none;
+    color:var(--muted);
+    font-size:1.05rem;
+    cursor:pointer;
+    padding:6px 8px;
+    border-radius:8px;
+  }
+  .close-panel:hover { background:var(--glass) }
+
+  /* Games list */
+  .games-list { overflow:auto; padding-right:6px; margin-top:8px; display:grid; gap:12px; grid-auto-rows:min-content; }
+  .game-card {
+    display:flex; gap:12px; align-items:flex-start;
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+    border-radius:10px; padding:12px; border:1px solid rgba(255,255,255,0.03);
+  }
+  .thumb {
+    width:74px; height:56px; border-radius:8px; background:linear-gradient(180deg,#0a0a0a,#121212); flex:0 0 74px;
+    display:flex;align-items:center;justify-content:center;font-size:26px;
+    color:var(--muted);
+    overflow:hidden;
+  }
+  .game-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .game-title { font-weight:700; color:var(--accent); font-size:.95rem; margin:0; }
+  .game-desc { margin:0; color:var(--muted); font-size:.86rem; line-height:1.1; }
+  .game-caption { margin-top:4px; color:rgba(191,207,192,0.6); font-size:.78rem }
+
+  .card-actions { display:flex; gap:8px; margin-top:8px; align-items:center }
+  .play-btn {
+    background:var(--accent);
+    color:#000;
+    border:none;
+    padding:8px 12px;
+    border-radius:8px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .info-btn {
+    background:transparent;
+    color:var(--muted);
+    border:1px solid rgba(255,255,255,0.03);
+    padding:6px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:.85rem;
   }
 
-  #modal-iframe {
-    width: 100%;
-    height: 105%;
-    border: none;
+  /* Fullscreen iframe modal */
+  .game-modal {
+    position:fixed; inset:0; display:none; z-index:9999;
+    background:linear-gradient(180deg, rgba(2,2,2,0.96), rgba(0,0,0,0.98));
+    align-items:center; justify-content:center; padding:18px; box-sizing:border-box;
   }
-
-  .close-btn {
-    position: absolute;
-    top: 10px;
-    right: 18px;
-    font-size: 30px;
-    color: #333;
-    cursor: pointer;
-    transition: color 0.2s;
-    z-index: 10;
+  .game-modal.open { display:flex; }
+  .modal-frame {
+    width:100%; height:100%; max-width:1100px; max-height:88vh; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.04);
+    background:#000;
   }
-
-  .close-btn:hover {
-    color: #e11d48;
+  .modal-top {
+    height:56px; display:flex; align-items:center; gap:12px; padding:10px 12px; box-sizing:border-box; background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
   }
+  .modal-title { color:var(--accent); font-weight:700; font-size:1rem; }
+  .modal-close { margin-left:auto; background:transparent; border:none; color:var(--muted); font-size:1rem; cursor:pointer; padding:8px 10px; border-radius:8px }
+  .modal-iframe { width:100%; height:calc(100% - 56px); border:none; display:block; }
 
-  @keyframes fadeIn {
-    from {opacity: 0; transform: translateY(-10px);}
-    to {opacity: 1; transform: translateY(0);}
+  /* small screens tuning */
+  @media (max-width:560px){
+    .floating-launcher { left:12px; width:56px;height:56px }
+    .thumb { width:64px;height:48px }
+    .panel-inner{padding:14px}
   }
 </style>
+</head>
+<body>
+
+<!-- Floating icon-only launcher (Left Center) -->
+<button class="floating-launcher" id="launcher" aria-label="Open games panel" title="Games">
+  <!-- Gamepad SVG icon -->
+  <svg class="icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M6 10.5C6 8.57 7.57 7 9.5 7H14.5C16.43 7 18 8.57 18 10.5V12.5C18 14.43 16.43 16 14.5 16H9.5C7.57 16 6 14.43 6 12.5V10.5Z" fill="currentColor"/>
+    <circle cx="9.5" cy="10.5" r="0.9" fill="#000"/>
+    <circle cx="14.5" cy="13.5" r="0.9" fill="#000"/>
+    <path d="M4 12.5C4 9.46 6.46 7 9.5 7H14.5C17.54 7 20 9.46 20 12.5V13.75C20 15.77 18.27 17.5 16.25 17.5H7.75C5.73 17.5 4 15.77 4 13.75V12.5Z" fill="rgba(0,0,0,0.25)"/>
+  </svg>
+</button>
+
+<!-- Slide-out panel -->
+<aside class="games-panel" id="gamesPanel" aria-hidden="true">
+  <div class="panel-inner">
+    <div class="panel-header">
+      <div>
+        <h2>🎮 Debeatzgh Games</h2>
+        <p>Quick games to relax, practice, and get inspired — open any game in fullscreen.</p>
+      </div>
+      <button class="close-panel" id="closePanel" aria-label="Close panel">✕</button>
+    </div>
+
+    <div class="games-list" id="gamesList" tabindex="0">
+      <!-- Card: Music Trivia Quiz -->
+      <div class="game-card" data-game="music-quiz.html" data-title="Music Trivia Quiz">
+        <div class="thumb" aria-hidden>❓</div>
+        <div class="game-body">
+          <div class="game-title">Music Trivia Quiz</div>
+          <div class="game-desc">20+ curated music questions — test your knowledge and beat the score.</div>
+          <div class="game-caption">Category: Trivia • Time: ~5–10 mins</div>
+          <div class="card-actions">
+            <button class="play-btn" data-src="music-quiz.html">Play Now</button>
+            <button class="info-btn" data-info="A 20+ question music quiz about pop, Afrobeats, production, and Ghanaian music.">Info</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Spin the Wheel -->
+      <div class="game-card" data-game="spin-wheel.html" data-title="Spin The Wheel">
+        <div class="thumb" aria-hidden>🎛️</div>
+        <div class="game-body">
+          <div class="game-title">Spin The Wheel</div>
+          <div class="game-desc">Beat idea generator — spin for quick prompts to spark a session.</div>
+          <div class="game-caption">Category: Creativity • Replayable</div>
+          <div class="card-actions">
+            <button class="play-btn" data-src="spin-wheel.html">Play Now</button>
+            <button class="info-btn" data-info="Spin for beat ideas such as 'Afrobeat drums' or 'lo-fi pad'.">Info</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Memory Match -->
+      <div class="game-card" data-game="memory-match.html" data-title="Memory Match">
+        <div class="thumb" aria-hidden>🧠</div>
+        <div class="game-body">
+          <div class="game-title">Memory Match</div>
+          <div class="game-desc">Flip and match music icons — relaxing and good for short sessions.</div>
+          <div class="game-caption">Category: Casual • Family-friendly</div>
+          <div class="card-actions">
+            <button class="play-btn" data-src="memory-match.html">Play Now</button>
+            <button class="info-btn" data-info="Flip pairs and match music icons. Tracks moves but no backend.">Info</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Slide Puzzle -->
+      <div class="game-card" data-game="puzzle-game.html" data-title="Slide Puzzle">
+        <div class="thumb" aria-hidden>🧩</div>
+        <div class="game-body">
+          <div class="game-title">Slide Puzzle</div>
+          <div class="game-desc">Classic sliding puzzle using the Debeatzgh image — solve the grid.</div>
+          <div class="game-caption">Category: Puzzle • Focus</div>
+          <div class="card-actions">
+            <button class="play-btn" data-src="puzzle-game.html">Play Now</button>
+            <button class="info-btn" data-info="4×4 sliding puzzle built with client-side JS.">Info</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Emoji Slot Machine -->
+      <div class="game-card" data-game="slot-machine.html" data-title="Slot Machine">
+        <div class="thumb" aria-hidden>🎰</div>
+        <div class="game-body">
+          <div class="game-title">Emoji Slot Machine</div>
+          <div class="game-desc">Spin the reels — music-themed emojis and small rewards of fun.</div>
+          <div class="game-caption">Category: Arcade • Quick-play</div>
+          <div class="card-actions">
+            <button class="play-btn" data-src="slot-machine.html">Play Now</button>
+            <button class="info-btn" data-info="Three-reel emoji slot — try for three-of-a-kind.">Info</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card: Reaction Speed Test -->
+      <div class="game-card" data-game="reaction-test.html" data-title="Reaction Test">
+        <div class="thumb" aria-hidden>⚡</div>
+        <div class="game-body">
+          <div class="game-title">Reaction Speed Test</div>
+          <div class="game-desc">Tap when it turns green — measure your reaction time and save best.</div>
+          <div class="game-caption">Category: Skill • Score</div>
+          <div class="card-actions">
+            <button class="play-btn" data-src="reaction-test.html">Play Now</button>
+            <button class="info-btn" data-info="Simple reaction timer with local best score saved.">Info</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:auto; color:var(--muted); font-size:.85rem; text-align:center; padding-top:6px;">
+      Tip: Tap a card → Play Now (opens the game fullscreen). Press <strong>Esc</strong> to close.
+    </div>
+  </div>
+</aside>
+
+<!-- Fullscreen modal that hosts the game in an iframe -->
+<div class="game-modal" id="gameModal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div style="width:100%;max-width:1100px;height:88vh;display:flex;flex-direction:column;border-radius:12px;overflow:hidden;">
+    <div class="modal-top">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" style="opacity:.9"><path d="M6 10.5C6 8.57 7.57 7 9.5 7H14.5C16.43 7 18 8.57 18 10.5V12.5C18 14.43 16.43 16 14.5 16H9.5C7.57 16 6 14.43 6 12.5V10.5Z" fill="currentColor" /></svg>
+        <div class="modal-title" id="modalTitle">Loading…</div>
+      </div>
+      <button class="modal-close" id="modalClose" aria-label="Close game">✕</button>
+    </div>
+
+    <div class="modal-frame" style="flex:1;display:flex;flex-direction:column;">
+      <iframe id="gameFrame" class="modal-iframe" title="Game frame" src=""></iframe>
+    </div>
+  </div>
+</div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+  // Elements
+  const launcher = document.getElementById('launcher');
+  const panel = document.getElementById('gamesPanel');
+  const closePanelBtn = document.getElementById('closePanel');
+  const playButtons = document.querySelectorAll('.play-btn');
+  const infoButtons = document.querySelectorAll('.info-btn');
+  const modal = document.getElementById('gameModal');
+  const modalClose = document.getElementById('modalClose');
+  const frame = document.getElementById('gameFrame');
+  const modalTitle = document.getElementById('modalTitle');
 
-  // 🔹 Floating Button at TOP-LEFT
-  const btnGroup = document.createElement("div");
-  btnGroup.className = "floating-btn-group";
-  Object.assign(btnGroup.style, {
-    position: "fixed",
-    top: "20px",          // Top-left positioning
-    left: "20px",
-    zIndex: "9999",
-    animation: "heartbeat 2.5s infinite ease-in-out, fadeSlideUp 0.6s ease-out forwards"
+  // Toggle panel
+  function openPanel(){
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden','false');
+    // move focus into panel for accessibility
+    setTimeout(()=> document.getElementById('gamesList').focus(), 120);
+  }
+  function closePanel(){
+    panel.classList.remove('open');
+    panel.setAttribute('aria-hidden','true');
+    launcher.focus();
+  }
+
+  launcher.addEventListener('click', ()=> {
+    if(panel.classList.contains('open')) closePanel();
+    else openPanel();
+  });
+  closePanelBtn.addEventListener('click', closePanel);
+
+  // Play a game in modal (fullscreen iframe)
+  function openGame(src, title){
+    frame.src = src;
+    modalTitle.textContent = title || 'Game';
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    // Focus close button for accessibility
+    setTimeout(()=> modalClose.focus(), 180);
+  }
+  function closeGame(){
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+    frame.src = ''; // unload iframe to stop audio/JS
+    document.body.style.overflow = '';
+  }
+
+  // Attach events for Play Now buttons
+  playButtons.forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const src = btn.getAttribute('data-src');
+      // title from card
+      const card = btn.closest('.game-card');
+      const title = card ? (card.dataset.title || 'Game') : 'Game';
+      openGame(src, title);
+    });
   });
 
-  // -------------------------------------------------------
-  // 📌 Updates Button
-  // -------------------------------------------------------
-  const button = document.createElement("a");
-  button.href = "#";
-  button.innerText = "📌 Updates";
-  Object.assign(button.style, {
-    background: "#16a34a",
-    color: "#fff",
-    padding: "12px 24px",
-    borderRadius: "30px",
-    textDecoration: "none",
-    fontSize: "15px",
-    fontWeight: "700",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.25)",
-    whiteSpace: "nowrap",
+  // Info pop — small accessible alert (uses simple alert for now)
+  infoButtons.forEach(b=>{
+    b.addEventListener('click', ()=> {
+      const info = b.getAttribute('data-info') || 'No information available';
+      // small non-blocking UI: use alert as simple fallback
+      alert(info);
+    });
   });
 
-  // 🔹 Iframe Modal
-  const modal = document.createElement("div");
-  modal.id = "iframe-modal";
-  modal.innerHTML = `
-    <div class="modal-content">
-      <span class="close-btn">&times;</span>
-      <iframe id="modal-iframe" src="" loading="lazy"></iframe>
-    </div>
-  `;
-
-  document.body.appendChild(modal);
-
-  // 🔹 Open Iframe on click
-  button.addEventListener("click", function (e) {
-    e.preventDefault();
-    document.getElementById("modal-iframe").src = "https://msha.ke/debeatzgh";
-    modal.style.display = "block";
-  });
-
-  btnGroup.appendChild(button);
-  document.body.appendChild(btnGroup);
-
-  // 🔹 Close Modal
-  document.addEventListener("click", function (e) {
-    if (e.target.classList.contains("close-btn") || e.target.id === "iframe-modal") {
-      modal.style.display = "none";
-      document.getElementById("modal-iframe").src = "";
+  // Modal close
+  modalClose.addEventListener('click', closeGame);
+  // Close panel when clicking outside (on overlay area), limited behavior: clicking launcher again already toggles
+  // Keyboard: ESC closes modal or panel
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Escape' || e.key === 'Esc'){
+      if(modal.classList.contains('open')) closeGame();
+      else if(panel.classList.contains('open')) closePanel();
     }
   });
 
-  // 🔹 Auto-open external ads in a new tab
-  document.getElementById("modal-iframe").addEventListener("load", function () {
+  // Accessibility: allow Enter on launcher to toggle
+  launcher.addEventListener('keyup', (e)=> { if(e.key === 'Enter') launcher.click(); });
+
+  // Optional: open sample game if URL contains ?game=slot-machine.html
+  (function checkQuery(){
     try {
-      const links = this.contentDocument.querySelectorAll("a");
-      links.forEach(link => {
-        if (!link.href.includes("debeatzgh.wordpress.com")) {
-          link.setAttribute("target", "_blank");
-          link.setAttribute("rel", "noopener");
-        }
-      });
-    } catch (err) {
-      console.warn("External site - cannot rewrite links");
-    }
-  });
+      const params = new URLSearchParams(location.search);
+      const game = params.get('game');
+      if(game){
+        // find title from card list
+        const card = Array.from(document.querySelectorAll('.game-card')).find(c=>c.dataset.game===game);
+        const title = card ? card.dataset.title : 'Game';
+        openGame(game, title);
+        // open panel as well
+        openPanel();
+      }
+    } catch(e){}
+  })();
 
-});
+  // Touch-friendly: allow drag to close panel — simple swipe left to close
+  let startX = 0, touchActive=false;
+  panel.addEventListener('touchstart', (ev)=> {
+    if(!panel.classList.contains('open')) return;
+    touchActive = true;
+    startX = ev.touches[0].clientX;
+  });
+  panel.addEventListener('touchmove', (ev)=> {
+    if(!touchActive) return;
+    const dx = ev.touches[0].clientX - startX;
+    // if dragging left by more than 60px, close
+    if(dx < -60) { touchActive=false; closePanel(); }
+  });
+  panel.addEventListener('touchend', ()=> { touchActive=false; });
+
+  // Small UX: close modal when iframe posts message { type: 'close' }
+  window.addEventListener('message', (ev)=>{
+    if(ev && ev.data && ev.data.type === 'close-game') closeGame();
+  });
 </script>
 
-
-# **👋 Hi, I'm David (DebeatzGH)**
-
-### *AI Tools Builder • UI/UX Creator • Digital Products Developer • Tech Blogger*
-
-<p align="center">
-  <img src="https://debeatzgh.wordpress.com/wp-content/uploads/2025/12/imagine_15462143230908918843052169799993526.jpg" width="140" style="border-radius:50%">
-</p>
-
----
-
-# **📚 Mini Blog Post Library (10–20 Posts)**
-
-### *A curated collection of my tutorials, ideas, tools & UI/UX content*
-
----
-
-## **📝 1. The Future of AI Tools for Creators**
-
-A breakdown of how creators can build income streams using micro automations, AI templates, and workflow tools.
-
----
-
-## **📝 2. 10 Profitable AI Side Hustles You Can Start Today**
-
-Easy-to-launch tech ideas for beginners, students, and creators using free and low-cost tools.
-
----
-
-## **📝 3. How to Build a Micro SaaS Using Only AI Tools**
-
-Step-by-step guide showing the workflow from idea → branding → landing page → automation.
-
----
-
-## **📝 4. UI/UX Widgets That Boost Landing Page Conversion**
-
-Top-performing design components with clean HTML/CSS examples.
-
----
-
-## **📝 5. My Weekly AI Tool Stack for Productivity & Design**
-
-The exact tools I use for automation, editing, research, and content.
-
----
-
-## **📝 6. How to Create Stunning Animated Buttons Using CSS**
-
-A detailed mini tutorial for developers who want to add playful micro-interactions.
-
----
-
-## **📝 7. Building Your First Online Digital Product Shop**
-
-A clean strategy showing setup, pricing, branding, and why GitHub Pages is perfect.
-
----
-
-## **📝 8. AI Prompts That Help Students & Creators Work Faster**
-
-A powerful list of prompts for writing, research, video scripts, and UI design.
-
----
-
-## **📝 9. Why Every Creator Needs a GitHub Pages Portfolio**
-
-A full explanation of how GitHub Pages can be used as a free website builder.
-
----
-
-## **📝 10. 5 UI Layouts You Can Copy for Your Next Project**
-
-Minimal, modern layouts with headers, hero sections, and CTA examples.
-
----
-
-## **📝 11. A Creator’s Guide to Automating Repetitive Tasks**
-
-Examples of tasks you can fully automate using AI + browser workflows.
-
----
-
-## **📝 12. How to Package & Sell Templates as Digital Products**
-
-A structured guide for designing, pricing, packaging, and promoting digital assets.
-
----
-
-## **📝 13. My Ultimate Blogging Starter Toolkit**
-
-Includes writing prompts, content templates, SEO tips, and automation hacks.
-
----
-
-## **📝 14. Turning Your Slides Into Professional Videos Automatically**
-
-Explains your slide-to-video AI tool concept and the workflow behind it.
-
----
-
-## **📝 15. UI/UX Mistakes Most Beginners Make (And How to Fix Them)**
-
-A simple way to redesign poor layouts into clean modern interfaces.
-
----
-
-## **📝 16. 20 GitHub Projects Every Beginner Should Try**
-
-A curated list to help students and new developers build real skills.
-
----
-
-## **📝 17. Creating a Brand Identity Using Only AI Tools**
-
-How to build logos, color palettes, typefaces, and mockups with free tools.
-
----
-
-## **📝 18. Unlocking the Power of GitHub for Non-Coders**
-
-Teaches beginners how to use GitHub for blogging, documentation, and websites.
-
----
-
-## **📝 19. Why Every UI/UX Designer Should Post on LinkedIn**
-
-Explains LinkedIn growth strategy with practical weekly posting ideas.
-
----
-
-## **📝 20. How to Build Your First Mini SaaS From 0 → 1**
-
-A complete beginner-friendly guide for your audience.
-
----
-
-# **🎨 What I Create**
-
-I design and build:
-
-* 🎨 **UI/UX Widgets**
-* 🖥 **Mini Landing Pages**
-* 🤖 **AI Tools & Automation Workflows**
-* 📝 **Tech + Side Hustle Tutorials**
-* 🎬 **Short Dev Videos**
-
----
-
-# **🧰 Tech Stack**
-
-<p align="center">
-<img src="https://img.shields.io/badge/HTML-FF4B23?style=for-the-badge&logo=html5&logoColor=white"/>
-<img src="https://img.shields.io/badge/CSS-254BDD?style=for-the-badge&logo=css3&logoColor=white"/>
-<img src="https://img.shields.io/badge/JavaScript-FCDC00?style=for-the-badge&logo=javascript&logoColor=black"/>
-<img src="https://img.shields.io/badge/AI_Tools-6A00FF?style=for-the-badge&logo=openai&logoColor=white"/>
-<img src="https://img.shields.io/badge/GitHub_Pages-000000?style=for-the-badge&logo=githubpages&logoColor=white"/>
-</p>
-
----
-
-# **⭐ Featured Projects**
-
-### 🔹 Side Hustle Starter Kit
-
-👉 [https://debeatzgh1.github.io/Side-hustle-starter-kit-/](https://debeatzgh1.github.io/Side-hustle-starter-kit-/)
-
-### 🔹 Curated AI Business & Product Guides
-
-👉 [https://debeatzgh1.github.io/Curated-Guides-for-Online-Business-AI-Product-Creation/](https://debeatzgh1.github.io/Curated-Guides-for-Online-Business-AI-Product-Creation/)
-
-### 🔹 Digital Products Affiliate Shop
-
-👉 [https://debeatzgh1.github.io/-My-Brand-Online-Digital-Products-Affiliate-Shop/](https://debeatzgh1.github.io/-My-Brand-Online-Digital-Products-Affiliate-Shop/)
-
----
-
-# **📬 Connect With Me**
-
-<p align="center">
-  <a href="https://www.linkedin.com/in/david-kumah-ab7392299">
-    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/>
-  </a>
-  <a href="https://debeatzgh1.github.io/">
-    <img src="https://img.shields.io/badge/Portfolio-000000?style=for-the-badge&logo=githubpages&logoColor=white"/>
-  </a>
-  <a href="https://beatzde4.blogspot.com/">
-    <img src="https://img.shields.io/badge/Blog-FF5722?style=for-the-badge&logo=blogger&logoColor=white"/>
-  </a>
-</p>
-
----
-
-# **🎯 Need a Custom UI, Landing Page, or AI Tool?**
-
-<p align="center">
-  <a href="https://docs.google.com/forms/d/e/1FAIpQLSec8llbmfgq_2cVxpdk0M9zi2BtNUT4_IjqFVkbM1RCApV3Gw/viewform?usp=publish-editor">
-    <img src="https://img.shields.io/badge/Order%20a%20Custom%20Design-6C63FF?style=for-the-badge"/>
-  </a>
-</p>
-
----
-
-
----
-
-# 📂 Blogger Scripts Catalog
-
-![Blogger Scripts Catalog Cover](https://debeatzgh.wordpress.com/wp-content/uploads/2025/08/designacleanmodernthumbnailforabloggerproductscarouseltool1711994558720457535.jpg)
-
-A curated collection of **Blogger-friendly scripts, widgets, and templates** — designed to improve your blog’s design, engagement, and user experience.
-Each project comes with a **live GitHub Pages demo**, thumbnail, and quick action button so you can see the script in action.
-
----
-
-## 🚀 Live Catalog
-
-| Thumbnail                                                                                                                                                                                                                                                  | Project                                                                                                                                                      | Description                                                                                                         | Action                                                                                                           |
+</body>
+</html>
+                                                                                                                                                     | Project                                                                                                                                                      | Description                                                                                                         | Action                                                                                                           |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | ![Custom Blogger Theme](https://debeatzgh.wordpress.com/wp-content/uploads/2025/08/generateamobile-firstresponsivebloggertemplatewithcustomizablecolorsfontsandsections1576324612066211977.jpg)                                                            | **[Custom Blogger Theme with Dynamic Post Loading and Logo](https://debeatzgh1.github.io/Custom-Blogger-Theme-for-with-Dynamic-Post-Loading-and-Logo-/)**    | A responsive, mobile-first Blogger theme with customizable sections, dynamic post loading, and custom logo support. | [🔗 View Demo](https://debeatzgh1.github.io/Custom-Blogger-Theme-for-with-Dynamic-Post-Loading-and-Logo-/)       |
 | ![Popup Generator](https://debeatzgh.wordpress.com/wp-content/uploads/2025/08/createatoolthatgeneratesiframeorcard-styleembedsforindividualbloggerpostscompletewiththumbnailtitleandreadmorebuttonforcross-blogpromotion754077096311972631.jpg)            | **[Popup HTML Page Generator](https://debeatzgh1.github.io/popup-html-page-generator-blogger/)**                                                             | Easily generate iframe or card-style embeds for individual Blogger posts with thumbnails and read-more buttons.     | [🔗 View Demo](https://debeatzgh1.github.io/popup-html-page-generator-blogger/)                                  |
